@@ -10,9 +10,6 @@
     android:background="@drawable/home2">
 
     <!-- TextureView for Live Stream -->
-
-
-    <!-- History Button with Image -->
     <TextureView
         android:id="@+id/tv"
         android:layout_width="394dp"
@@ -24,6 +21,7 @@
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintVertical_bias="0.642" />
 
+    <!-- History Button -->
     <ImageView
         android:id="@+id/history_image"
         android:layout_width="60dp"
@@ -48,5 +46,22 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- Alert Button -->
+    <Button
+        android:id="@+id/alert_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"
+        android:layout_marginEnd="84dp"
+        android:backgroundTint="#FF5722"
+        android:text="Alert"
+        android:textColor="#FFFFFF"
+        app:layout_constraintBottom_toTopOf="@+id/locker_button"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toEndOf="@+id/history_image"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="1.0" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
