@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/main"
@@ -9,18 +10,43 @@
     android:background="@drawable/home2">
 
     <!-- TextureView for Live Stream -->
+
+
+    <!-- History Button with Image -->
     <TextureView
         android:id="@+id/tv"
-        android:layout_width="350dp"
-        android:layout_height="164dp"
-        android:contentDescription="Live Stream Display"
-        app:layout_constraintBottom_toBottomOf="parent"
+        android:layout_width="394dp"
+        android:layout_height="206dp"
+        app:layout_constraintBottom_toTopOf="@+id/locker_button"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHeight_percent="0.3"
-        app:layout_constraintHorizontal_bias="0.491"
+        app:layout_constraintHorizontal_bias="0.47"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.562"
-        app:layout_constraintWidth_percent="0.9" />
+        app:layout_constraintVertical_bias="0.642" />
+
+    <ImageView
+        android:id="@+id/history_image"
+        android:layout_width="60dp"
+        android:layout_height="60dp"
+        android:layout_marginBottom="16dp"
+        android:src="@drawable/ic_history"
+        android:contentDescription="History Image"
+        app:layout_constraintBottom_toTopOf="@+id/locker_button"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- Locker Button -->
+    <Button
+        android:id="@+id/locker_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"
+        android:backgroundTint="#FF0000"
+        android:text="Locker Closed"
+        android:textColor="#FFFFFF"
+        android:textSize="18sp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
