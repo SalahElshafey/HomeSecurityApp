@@ -1,5 +1,6 @@
 package com.example.homesecurityapp;
 
+import android.content.Intent;
 import android.graphics.SurfaceTexture;
 import android.graphics.drawable.AnimationDrawable;
 import android.hardware.camera2.CameraAccessException;
@@ -10,6 +11,7 @@ import android.hardware.camera2.CaptureRequest;
 import android.os.Bundle;
 import android.view.Surface;
 import android.view.TextureView;
+import android.widget.Button;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -23,19 +25,24 @@ public class MainActivity4 extends AppCompatActivity {
     private TextureView textureView;
     private CameraDevice cameraDevice;
     private CameraCaptureSession cameraCaptureSession;
+    private Button backButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main4);
 
-        // Set blinking background animation
+        // Initialize blinking background animation
         ConstraintLayout layout = findViewById(R.id.main);
-        layout.setBackgroundResource(R.drawable.blinking_background);
+        if (layout != null) {
+            layout.setBackgroundResource(R.drawable.blinking_background);
+            AnimationDrawable animationDrawable = (AnimationDrawable) layout.getBackground();
+            if (animationDrawable != null) {
+                animationDrawable.start();
+            }
+        }
 
-        AnimationDrawable animationDrawable = (AnimationDrawable) layout.getBackground();
-        animationDrawable.start();
-
+        // Initialize live stream
         textureView = findViewById(R.id.tv);
         textureView.setSurfaceTextureListener(new TextureView.SurfaceTextureListener() {
             @Override
@@ -54,44 +61,20 @@ public class MainActivity4 extends AppCompatActivity {
             @Override
             public void onSurfaceTextureUpdated(@NonNull SurfaceTexture surface) {}
         });
-    }
 
-    /**
-     * Initializes the TextureView for live streaming.
-     */
-    private void setupLiveStream() {
-        textureView.setSurfaceTextureListener(new TextureView.SurfaceTextureListener() {
-            @Override
-            public void onSurfaceTextureAvailable(@NonNull SurfaceTexture surface, int width, int height) {
-                startLiveStream(surface);
-            }
-
-            @Override
-            public void onSurfaceTextureSizeChanged(@NonNull SurfaceTexture surface, int width, int height) {
-                // Handle changes in texture size if needed
-            }
-
-            @Override
-            public boolean onSurfaceTextureDestroyed(@NonNull SurfaceTexture surface) {
-                return false;
-            }
-
-            @Override
-            public void onSurfaceTextureUpdated(@NonNull SurfaceTexture surface) {
-                // Optional: Handle updates to the texture
-            }
+        // Back button to return to MainActivity2
+        backButton = findViewById(R.id.back_button);
+        backButton.setOnClickListener(v -> {
+            Intent intent = new Intent(MainActivity4.this, MainActivity2.class);
+            startActivity(intent);
+            finish();
         });
     }
 
-    /**
-     * Starts the live stream using the Camera2 API.
-     *
-     * @param surfaceTexture The surface texture of the TextureView.
-     */
     private void startLiveStream(SurfaceTexture surfaceTexture) {
         try {
             CameraManager cameraManager = (CameraManager) getSystemService(CAMERA_SERVICE);
-            String cameraId = cameraManager.getCameraIdList()[0]; // Use the back camera
+            String cameraId = cameraManager.getCameraIdList()[0];
 
             cameraManager.openCamera(cameraId, new CameraDevice.StateCallback() {
                 @Override
@@ -115,41 +98,31 @@ public class MainActivity4 extends AppCompatActivity {
             }, null);
         } catch (CameraAccessException e) {
             e.printStackTrace();
-            Toast.makeText(this, "Unable to access the camera.", Toast.LENGTH_SHORT).show();
         }
     }
 
-    /**
-     * Creates a camera preview session to display the live stream.
-     *
-     * @param surfaceTexture The surface texture of the TextureView.
-     */
     private void createCameraPreviewSession(SurfaceTexture surfaceTexture) {
         try {
             surfaceTexture.setDefaultBufferSize(textureView.getWidth(), textureView.getHeight());
             Surface surface = new Surface(surfaceTexture);
 
-            // Create a capture request for the preview
             CaptureRequest.Builder captureRequestBuilder =
                     cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
             captureRequestBuilder.addTarget(surface);
 
-            // Create a camera capture session for the preview
             cameraDevice.createCaptureSession(Collections.singletonList(surface),
                     new CameraCaptureSession.StateCallback() {
                         @Override
                         public void onConfigured(@NonNull CameraCaptureSession session) {
                             cameraCaptureSession = session;
                             try {
-                                // Start displaying the camera preview
                                 cameraCaptureSession.setRepeatingRequest(
                                         captureRequestBuilder.build(),
-                                        null, // No additional capture callback
-                                        null  // No handler, run on default thread
+                                        null,
+                                        null
                                 );
                             } catch (CameraAccessException e) {
                                 e.printStackTrace();
-                                Toast.makeText(MainActivity4.this, "Failed to start camera preview.", Toast.LENGTH_SHORT).show();
                             }
                         }
 
@@ -160,7 +133,6 @@ public class MainActivity4 extends AppCompatActivity {
                     }, null);
         } catch (CameraAccessException e) {
             e.printStackTrace();
-            Toast.makeText(this, "Error accessing the camera.", Toast.LENGTH_SHORT).show();
         }
     }
 
