@@ -25,6 +25,15 @@
         android:theme="@style/Theme.HomeSecurityApp"
         tools:targetApi="31">
         <activity
+            android:name=".LightingFragment"
+            android:exported="false" />
+        <activity
+            android:name=".CoffeeMachineFragment"
+            android:exported="false" />
+        <activity
+            android:name=".MainActivity5"
+            android:exported="false" />
+        <activity
             android:name=".MainActivity4"
             android:exported="false" />
         <activity

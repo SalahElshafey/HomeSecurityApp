@@ -23,7 +23,7 @@ public class MainActivity2 extends AppCompatActivity {
 
     private TextureView textureView;
     private CameraDevice cameraDevice;
-    private Button lockerButton, alertButton;
+    private Button lockerButton, alertButton,homeButton;
     private ImageView historyImage;
     private boolean isLockerOpen = false; // Locker state flag
     @Override
@@ -35,7 +35,13 @@ public class MainActivity2 extends AppCompatActivity {
         lockerButton = findViewById(R.id.locker_button);
         historyImage = findViewById(R.id.history_image);
         alertButton = findViewById(R.id.alert_button);
+        homeButton=findViewById(R.id.home_button);
 
+        //setting up home button
+        homeButton.setOnClickListener(v -> {
+            Intent intent = new Intent(MainActivity2.this, MainActivity5.class);
+            startActivity(intent);
+        });
         // History button navigation
         historyImage.setOnClickListener(v -> {
             Intent intent = new Intent(MainActivity2.this, MainActivity3.class);
