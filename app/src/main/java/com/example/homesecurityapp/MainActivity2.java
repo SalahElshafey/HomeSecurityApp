@@ -9,6 +9,7 @@ import android.os.Bundle;
 import android.view.Surface;
 import android.view.TextureView;
 import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -30,8 +31,9 @@ public class MainActivity2 extends AppCompatActivity {
     private CameraCaptureSession cameraCaptureSession;
     private CaptureRequest.Builder captureRequestBuilder;
 
-    private Button lockerButton, alertButton, homeButton;
-    private ImageView historyImage;
+    private Button lockerButton;
+
+    private ImageView alertButton, homeButton, historyImage;
     private TextView welcomeMessage;
     private boolean isLockerOpen = false;
 
@@ -52,6 +54,7 @@ public class MainActivity2 extends AppCompatActivity {
         historyImage = findViewById(R.id.history_button);
         alertButton = findViewById(R.id.alert_button);
         homeButton = findViewById(R.id.home_button);
+        historyImage = findViewById(R.id.history_button);  // Correctly cast as ImageButton
         welcomeMessage = findViewById(R.id.welcome_message);
 
         ProgressBar progressSecurity = findViewById(R.id.progress_security);
