@@ -1,6 +1,8 @@
 package com.example.homesecurityapp;
 
+import android.Manifest;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.SurfaceTexture;
 import android.hardware.camera2.*;
 import android.os.Bundle;
@@ -8,128 +10,118 @@ import android.view.Surface;
 import android.view.TextureView;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 
-import java.util.Collections;
+import java.util.Arrays;
 
 public class MainActivity2 extends AppCompatActivity {
 
+    private static final int CAMERA_REQUEST_CODE = 100;
+
     private TextureView textureView;
     private CameraDevice cameraDevice;
+    private CameraCaptureSession cameraCaptureSession;
+    private CaptureRequest.Builder captureRequestBuilder;
+
     private Button lockerButton, alertButton, homeButton;
     private ImageView historyImage;
-    private TextView welcomeMessage; // TextView for the welcome message
-    private boolean isLockerOpen = false; // Locker state flag
+    private TextView welcomeMessage;
+    private boolean isLockerOpen = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main2);
 
-        initializeViews(); // Initialize views
-        displayWelcomeMessage(); // Display the username in the welcome message
-        setupListeners(); // Setup listeners for buttons
-        initializeLiveStream(); // Initialize the live stream
+        initializeViews();
+        displayWelcomeMessage();
+        setupListeners();
+        checkCameraPermission();
     }
 
-    /**
-     * Initializes all views.
-     */
     private void initializeViews() {
-        textureView = findViewById(R.id.tv);
+        textureView = findViewById(R.id.live_stream);
         lockerButton = findViewById(R.id.locker_button);
-        historyImage = findViewById(R.id.history_image);
+        historyImage = findViewById(R.id.history_button);
         alertButton = findViewById(R.id.alert_button);
         homeButton = findViewById(R.id.home_button);
-        welcomeMessage = findViewById(R.id.welcome_message); // Initialize the welcome message TextView
+        welcomeMessage = findViewById(R.id.welcome_message);
+
+        ProgressBar progressSecurity = findViewById(R.id.progress_security);
+        ProgressBar progressSystem = findViewById(R.id.progress_system);
+
+        progressSecurity.setProgress(85);
+        progressSystem.setProgress(55);
     }
 
-    /**
-     * Displays the welcome message with the username.
-     */
     private void displayWelcomeMessage() {
         Intent intent = getIntent();
-        String username = intent.getStringExtra("USERNAME"); // Retrieve the username from the Intent
-        if (username != null && !username.isEmpty()) {
-            welcomeMessage.setText("Welcome back, " + username + "!");
-        } else {
-            welcomeMessage.setText("Welcome back, User!");
-        }
+        String username = intent.getStringExtra("USERNAME");
+        welcomeMessage.setText(username != null && !username.isEmpty() ? "Welcome back, " + username + "!" : "Welcome back, User!");
     }
 
-    /**
-     * Sets up listeners for buttons and other interactive components.
-     */
     private void setupListeners() {
-        // Home button
         homeButton.setOnClickListener(v -> navigateTo(MainActivity5.class));
-
-        // History button
         historyImage.setOnClickListener(v -> navigateTo(MainActivity3.class));
-
-        // Alert button
         alertButton.setOnClickListener(v -> {
             Toast.makeText(this, "Alert is ON", Toast.LENGTH_SHORT).show();
             navigateTo(MainActivity4.class);
         });
-
-        // Locker button
         lockerButton.setOnClickListener(v -> toggleLocker());
     }
 
-    /**
-     * Navigates to the specified activity.
-     *
-     * @param activityClass The target activity class.
-     */
     private void navigateTo(Class<?> activityClass) {
         Intent intent = new Intent(MainActivity2.this, activityClass);
         startActivity(intent);
     }
 
-    /**
-     * Toggles the locker state between open and closed.
-     */
     private void toggleLocker() {
         if (isLockerOpen) {
-            closeLocker();
+            lockerButton.setText("Locker Closed");
+            lockerButton.setBackgroundColor(getResources().getColor(android.R.color.holo_red_dark));
+            Toast.makeText(this, "Locker is now Closed!", Toast.LENGTH_SHORT).show();
+            isLockerOpen = false;
         } else {
-            openLocker();
+            lockerButton.setText("Locker Open");
+            lockerButton.setBackgroundColor(getResources().getColor(android.R.color.holo_green_dark));
+            Toast.makeText(this, "Locker is now Open!", Toast.LENGTH_SHORT).show();
+            isLockerOpen = true;
         }
     }
 
-    /**
-     * Opens the locker and updates the UI.
-     */
-    private void openLocker() {
-        lockerButton.setBackgroundColor(getResources().getColor(android.R.color.holo_green_dark));
-        lockerButton.setText("Locker Open");
-        Toast.makeText(this, "Locker Opened!", Toast.LENGTH_SHORT).show();
-        isLockerOpen = true;
+    private void checkCameraPermission() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, CAMERA_REQUEST_CODE);
+        } else {
+            initializeLiveStream();
+        }
     }
 
-    /**
-     * Closes the locker and updates the UI.
-     */
-    private void closeLocker() {
-        lockerButton.setBackgroundColor(getResources().getColor(android.R.color.holo_red_dark));
-        lockerButton.setText("Locker Closed");
-        Toast.makeText(this, "Locker Closed!", Toast.LENGTH_SHORT).show();
-        isLockerOpen = false;
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == CAMERA_REQUEST_CODE) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                Toast.makeText(this, "Camera permission granted", Toast.LENGTH_SHORT).show();
+                initializeLiveStream();
+            } else {
+                Toast.makeText(this, "Camera permission denied", Toast.LENGTH_SHORT).show();
+            }
+        }
     }
 
-    /**
-     * Initializes the live camera stream.
-     */
     private void initializeLiveStream() {
         textureView.setSurfaceTextureListener(new TextureView.SurfaceTextureListener() {
             @Override
             public void onSurfaceTextureAvailable(@NonNull SurfaceTexture surface, int width, int height) {
-                startLiveStream(surface);
+                openCamera();
             }
 
             @Override
@@ -145,20 +137,15 @@ public class MainActivity2 extends AppCompatActivity {
         });
     }
 
-    /**
-     * Starts the live camera stream.
-     *
-     * @param surfaceTexture The surface texture for the stream.
-     */
-    private void startLiveStream(SurfaceTexture surfaceTexture) {
+    private void openCamera() {
         try {
             CameraManager cameraManager = (CameraManager) getSystemService(CAMERA_SERVICE);
-            String cameraId = cameraManager.getCameraIdList()[0]; // Back camera
+            String cameraId = cameraManager.getCameraIdList()[0]; // Rear camera
             cameraManager.openCamera(cameraId, new CameraDevice.StateCallback() {
                 @Override
                 public void onOpened(@NonNull CameraDevice camera) {
                     cameraDevice = camera;
-                    setupCaptureSession(surfaceTexture);
+                    createCameraPreviewSession();
                 }
 
                 @Override
@@ -179,34 +166,31 @@ public class MainActivity2 extends AppCompatActivity {
         }
     }
 
-    /**
-     * Sets up the camera capture session.
-     *
-     * @param surfaceTexture The surface texture for the stream.
-     */
-    private void setupCaptureSession(SurfaceTexture surfaceTexture) {
+    private void createCameraPreviewSession() {
         try {
+            SurfaceTexture surfaceTexture = textureView.getSurfaceTexture();
+            surfaceTexture.setDefaultBufferSize(1920, 1080);
             Surface surface = new Surface(surfaceTexture);
-            CaptureRequest.Builder captureRequestBuilder =
-                    cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
+
+            captureRequestBuilder = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
             captureRequestBuilder.addTarget(surface);
 
-            cameraDevice.createCaptureSession(Collections.singletonList(surface),
-                    new CameraCaptureSession.StateCallback() {
-                        @Override
-                        public void onConfigured(@NonNull CameraCaptureSession session) {
-                            try {
-                                session.setRepeatingRequest(captureRequestBuilder.build(), null, null);
-                            } catch (CameraAccessException e) {
-                                e.printStackTrace();
-                            }
-                        }
+            cameraDevice.createCaptureSession(Arrays.asList(surface), new CameraCaptureSession.StateCallback() {
+                @Override
+                public void onConfigured(@NonNull CameraCaptureSession session) {
+                    cameraCaptureSession = session;
+                    try {
+                        cameraCaptureSession.setRepeatingRequest(captureRequestBuilder.build(), null, null);
+                    } catch (CameraAccessException e) {
+                        e.printStackTrace();
+                    }
+                }
 
-                        @Override
-                        public void onConfigureFailed(@NonNull CameraCaptureSession session) {
-                            Toast.makeText(MainActivity2.this, "Live stream failed to configure", Toast.LENGTH_SHORT).show();
-                        }
-                    }, null);
+                @Override
+                public void onConfigureFailed(@NonNull CameraCaptureSession session) {
+                    Toast.makeText(MainActivity2.this, "Camera configuration failed!", Toast.LENGTH_SHORT).show();
+                }
+            }, null);
         } catch (CameraAccessException e) {
             e.printStackTrace();
         }
@@ -217,6 +201,9 @@ public class MainActivity2 extends AppCompatActivity {
         super.onDestroy();
         if (cameraDevice != null) {
             cameraDevice.close();
+        }
+        if (cameraCaptureSession != null) {
+            cameraCaptureSession.close();
         }
     }
 }
