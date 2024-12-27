@@ -2,16 +2,13 @@ package com.example.homesecurityapp;
 
 import android.content.Intent;
 import android.graphics.SurfaceTexture;
-import android.hardware.camera2.CameraAccessException;
-import android.hardware.camera2.CameraCaptureSession;
-import android.hardware.camera2.CameraDevice;
-import android.hardware.camera2.CameraManager;
-import android.hardware.camera2.CaptureRequest;
+import android.hardware.camera2.*;
 import android.os.Bundle;
 import android.view.Surface;
 import android.view.TextureView;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -23,47 +20,80 @@ public class MainActivity2 extends AppCompatActivity {
 
     private TextureView textureView;
     private CameraDevice cameraDevice;
-    private Button lockerButton, alertButton,homeButton;
+    private Button lockerButton, alertButton, homeButton;
     private ImageView historyImage;
+    private TextView welcomeMessage; // TextView for the welcome message
     private boolean isLockerOpen = false; // Locker state flag
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main2);
 
+        initializeViews(); // Initialize views
+        displayWelcomeMessage(); // Display the username in the welcome message
+        setupListeners(); // Setup listeners for buttons
+        initializeLiveStream(); // Initialize the live stream
+    }
+
+    /**
+     * Initializes all views.
+     */
+    private void initializeViews() {
         textureView = findViewById(R.id.tv);
         lockerButton = findViewById(R.id.locker_button);
         historyImage = findViewById(R.id.history_image);
         alertButton = findViewById(R.id.alert_button);
-        homeButton=findViewById(R.id.home_button);
-
-        //setting up home button
-        homeButton.setOnClickListener(v -> {
-            Intent intent = new Intent(MainActivity2.this, MainActivity5.class);
-            startActivity(intent);
-        });
-        // History button navigation
-        historyImage.setOnClickListener(v -> {
-            Intent intent = new Intent(MainActivity2.this, MainActivity3.class);
-            startActivity(intent);
-        });
-
-        // Alert button navigation
-        alertButton.setOnClickListener(v -> {
-            Toast.makeText(this, "Alert is ON", Toast.LENGTH_SHORT).show();
-            Intent intent = new Intent(MainActivity2.this, MainActivity4.class);
-            startActivity(intent);
-        });
-
-
-
-        lockerButton.setOnClickListener(v -> toggleLocker());
-
-        // Initialize Camera Manager and setup live stream
-        initializeLiveStream();
+        homeButton = findViewById(R.id.home_button);
+        welcomeMessage = findViewById(R.id.welcome_message); // Initialize the welcome message TextView
     }
 
-    // Toggle locker button state
+    /**
+     * Displays the welcome message with the username.
+     */
+    private void displayWelcomeMessage() {
+        Intent intent = getIntent();
+        String username = intent.getStringExtra("USERNAME"); // Retrieve the username from the Intent
+        if (username != null && !username.isEmpty()) {
+            welcomeMessage.setText("Welcome back, " + username + "!");
+        } else {
+            welcomeMessage.setText("Welcome back, User!");
+        }
+    }
+
+    /**
+     * Sets up listeners for buttons and other interactive components.
+     */
+    private void setupListeners() {
+        // Home button
+        homeButton.setOnClickListener(v -> navigateTo(MainActivity5.class));
+
+        // History button
+        historyImage.setOnClickListener(v -> navigateTo(MainActivity3.class));
+
+        // Alert button
+        alertButton.setOnClickListener(v -> {
+            Toast.makeText(this, "Alert is ON", Toast.LENGTH_SHORT).show();
+            navigateTo(MainActivity4.class);
+        });
+
+        // Locker button
+        lockerButton.setOnClickListener(v -> toggleLocker());
+    }
+
+    /**
+     * Navigates to the specified activity.
+     *
+     * @param activityClass The target activity class.
+     */
+    private void navigateTo(Class<?> activityClass) {
+        Intent intent = new Intent(MainActivity2.this, activityClass);
+        startActivity(intent);
+    }
+
+    /**
+     * Toggles the locker state between open and closed.
+     */
     private void toggleLocker() {
         if (isLockerOpen) {
             closeLocker();
@@ -72,7 +102,9 @@ public class MainActivity2 extends AppCompatActivity {
         }
     }
 
-    // Open locker
+    /**
+     * Opens the locker and updates the UI.
+     */
     private void openLocker() {
         lockerButton.setBackgroundColor(getResources().getColor(android.R.color.holo_green_dark));
         lockerButton.setText("Locker Open");
@@ -80,7 +112,9 @@ public class MainActivity2 extends AppCompatActivity {
         isLockerOpen = true;
     }
 
-    // Close locker
+    /**
+     * Closes the locker and updates the UI.
+     */
     private void closeLocker() {
         lockerButton.setBackgroundColor(getResources().getColor(android.R.color.holo_red_dark));
         lockerButton.setText("Locker Closed");
@@ -88,6 +122,9 @@ public class MainActivity2 extends AppCompatActivity {
         isLockerOpen = false;
     }
 
+    /**
+     * Initializes the live camera stream.
+     */
     private void initializeLiveStream() {
         textureView.setSurfaceTextureListener(new TextureView.SurfaceTextureListener() {
             @Override
@@ -108,6 +145,11 @@ public class MainActivity2 extends AppCompatActivity {
         });
     }
 
+    /**
+     * Starts the live camera stream.
+     *
+     * @param surfaceTexture The surface texture for the stream.
+     */
     private void startLiveStream(SurfaceTexture surfaceTexture) {
         try {
             CameraManager cameraManager = (CameraManager) getSystemService(CAMERA_SERVICE);
@@ -116,31 +158,7 @@ public class MainActivity2 extends AppCompatActivity {
                 @Override
                 public void onOpened(@NonNull CameraDevice camera) {
                     cameraDevice = camera;
-                    try {
-                        Surface surface = new Surface(surfaceTexture);
-                        CaptureRequest.Builder captureRequestBuilder =
-                                cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
-                        captureRequestBuilder.addTarget(surface);
-
-                        cameraDevice.createCaptureSession(Collections.singletonList(surface),
-                                new CameraCaptureSession.StateCallback() {
-                                    @Override
-                                    public void onConfigured(@NonNull CameraCaptureSession session) {
-                                        try {
-                                            session.setRepeatingRequest(captureRequestBuilder.build(), null, null);
-                                        } catch (CameraAccessException e) {
-                                            e.printStackTrace();
-                                        }
-                                    }
-
-                                    @Override
-                                    public void onConfigureFailed(@NonNull CameraCaptureSession session) {
-                                        Toast.makeText(MainActivity2.this, "Live stream failed to configure", Toast.LENGTH_SHORT).show();
-                                    }
-                                }, null);
-                    } catch (CameraAccessException e) {
-                        e.printStackTrace();
-                    }
+                    setupCaptureSession(surfaceTexture);
                 }
 
                 @Override
@@ -161,6 +179,38 @@ public class MainActivity2 extends AppCompatActivity {
         }
     }
 
+    /**
+     * Sets up the camera capture session.
+     *
+     * @param surfaceTexture The surface texture for the stream.
+     */
+    private void setupCaptureSession(SurfaceTexture surfaceTexture) {
+        try {
+            Surface surface = new Surface(surfaceTexture);
+            CaptureRequest.Builder captureRequestBuilder =
+                    cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
+            captureRequestBuilder.addTarget(surface);
+
+            cameraDevice.createCaptureSession(Collections.singletonList(surface),
+                    new CameraCaptureSession.StateCallback() {
+                        @Override
+                        public void onConfigured(@NonNull CameraCaptureSession session) {
+                            try {
+                                session.setRepeatingRequest(captureRequestBuilder.build(), null, null);
+                            } catch (CameraAccessException e) {
+                                e.printStackTrace();
+                            }
+                        }
+
+                        @Override
+                        public void onConfigureFailed(@NonNull CameraCaptureSession session) {
+                            Toast.makeText(MainActivity2.this, "Live stream failed to configure", Toast.LENGTH_SHORT).show();
+                        }
+                    }, null);
+        } catch (CameraAccessException e) {
+            e.printStackTrace();
+        }
+    }
 
     @Override
     protected void onDestroy() {

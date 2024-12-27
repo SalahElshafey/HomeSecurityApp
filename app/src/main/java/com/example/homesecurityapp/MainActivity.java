@@ -33,7 +33,9 @@ public class MainActivity extends AppCompatActivity {
                 String password = passwordEditText.getText().toString();
 
                 if (username.equals(ACCEPTED_USERNAME) && password.equals(ACCEPTED_PASSWORD)) {
+                    // Pass the username to MainActivity2
                     Intent intent = new Intent(MainActivity.this, MainActivity2.class);
+                    intent.putExtra("USERNAME", username); // Add username as an extra
                     startActivity(intent);
                 } else {
                     Toast.makeText(MainActivity.this, "Invalid username or password", Toast.LENGTH_SHORT).show();
