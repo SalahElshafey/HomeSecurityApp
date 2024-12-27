@@ -1,10 +1,13 @@
 package com.example.homesecurityapp;
 
 import android.os.Bundle;
-import androidx.fragment.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.Toast;
+
+import androidx.fragment.app.Fragment;
 
 public class CoffeeMachineFragment extends Fragment {
 
@@ -12,6 +15,17 @@ public class CoffeeMachineFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_coffee_machine, container, false);
+        View view = inflater.inflate(R.layout.fragment_coffee_machine, container, false);
+
+        // Get reference to the "Start Brewing" button
+        Button startBrewButton = view.findViewById(R.id.start_brew);
+
+        // Set an OnClickListener for the button
+        startBrewButton.setOnClickListener(v -> {
+            // Show a Toast message
+            Toast.makeText(getContext(), "Coffee Brewing Started ☕", Toast.LENGTH_SHORT).show();
+        });
+
+        return view;
     }
 }

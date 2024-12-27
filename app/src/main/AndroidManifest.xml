@@ -1,18 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
+
     <!-- Permissions -->
-    <uses-permission
-        android:name="android.permission.CAMERA"
-        tools:ignore="PermissionImpliesUnsupportedChromeOsHardware" />
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
-
     <uses-feature android:name="android.hardware.camera" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+
 
     <application
         android:allowBackup="true"
@@ -24,39 +22,32 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.HomeSecurityApp"
         tools:targetApi="31">
-        <activity
-            android:name=".LightingFragment"
-            android:exported="false" />
-        <activity
-            android:name=".CoffeeMachineFragment"
-            android:exported="false" />
-        <activity
-            android:name=".MainActivity5"
-            android:exported="false" />
-        <activity
-            android:name=".MainActivity4"
-            android:exported="false" />
-        <activity
-            android:name=".HistoryAdapter"
-            android:exported="false" />
-        <activity
-            android:name=".HistoryItem"
-            android:exported="false" />
-        <activity
-            android:name=".MainActivity3"
-            android:exported="false" /> <!-- Main Activity: Entry Point -->
+
+        <!-- Main Activity: Entry Point -->
         <activity
             android:name=".MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-        </activity> <!-- Secondary Activity -->
-        <activity
-            android:name=".MainActivity2"
-            android:exported="false" />
-    </application>
+        </activity>
 
+        <!-- Other Activities -->
+        <activity android:name=".MainActivity2" android:exported="false" />
+        <activity android:name=".MainActivity3" android:exported="false" />
+        <activity android:name=".MainActivity4" android:exported="false" />
+        <activity android:name=".MainActivity5" android:exported="false" />
+
+        <!-- Fragments as Activities (if needed) -->
+        <activity android:name=".CoffeeMachineFragment" android:exported="false" />
+        <activity android:name=".LightingFragment" android:exported="false" />
+        <activity android:name=".ThermostatFragment" android:exported="false" />
+        <activity android:name=".MusicFragment" android:exported="false" />
+
+        <!-- Additional Utility Classes -->
+        <activity android:name=".HistoryAdapter" android:exported="false" />
+        <activity android:name=".HistoryItem" android:exported="false" />
+
+    </application>
 </manifest>

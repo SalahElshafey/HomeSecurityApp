@@ -3,23 +3,22 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="16dp"
-    android:background="@color/background_light">
+    android:padding="16dp">
 
     <TextView
+        android:id="@+id/temperature_text"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Coffee Machine Controls"
+        android:text="20°C"
         android:textSize="24sp"
         android:textStyle="bold"
-        android:textColor="@color/primary_dark"
-        android:paddingBottom="16dp" />
+        android:layout_gravity="center" />
 
-    <Button
-        android:id="@+id/start_brew"
-        android:layout_width="wrap_content"
+    <SeekBar
+        android:id="@+id/temperature_seekbar"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Start Brewing"
-        android:backgroundTint="@color/primary"
-        android:textColor="@color/white" />
+        android:max="40"
+        android:progress="20" />
+
 </LinearLayout>
