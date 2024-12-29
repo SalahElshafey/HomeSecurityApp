@@ -6,13 +6,14 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.TextView;
-import com.example.homesecurityapp.R;
-
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 public class HistoryAdapter extends ArrayAdapter<HistoryItem> {
 
@@ -29,14 +30,21 @@ public class HistoryAdapter extends ArrayAdapter<HistoryItem> {
 
         HistoryItem historyItem = getItem(position);
 
-        TextView statusTextView = convertView.findViewById(R.id.status_text_view);
+        TextView lockStatusTextView = convertView.findViewById(R.id.lock_status_text_view);
+        TextView safetyStatusTextView = convertView.findViewById(R.id.safety_status_text_view);
         TextView timestampTextView = convertView.findViewById(R.id.timestamp_text_view);
 
         if (historyItem != null) {
-            statusTextView.setText(historyItem.getStatus());
-            timestampTextView.setText(historyItem.getTimestamp());
+            lockStatusTextView.setText("Lock Status: " + historyItem.getLockStatus());
+            safetyStatusTextView.setText("Safety Status: " + historyItem.getSafetyStatus());
+            timestampTextView.setText(formatTimestamp(historyItem.getTimestamp()));
         }
 
         return convertView;
+    }
+
+    private String formatTimestamp(long timestamp) {
+        SimpleDateFormat dateFormat = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss", Locale.getDefault());
+        return dateFormat.format(new Date(timestamp));
     }
 }

@@ -26,29 +26,31 @@ public class MainActivity3 extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main3);
 
-        // Initialize ListView and Adapter
+        initializeViews();
+        loadHistoryData();
+    }
+
+    private void initializeViews() {
         historyListView = findViewById(R.id.history_list_view);
         historyList = new ArrayList<>();
         historyAdapter = new HistoryAdapter(this, historyList);
         historyListView.setAdapter(historyAdapter);
-
-        // Load data from Firebase
-        loadHistoryData();
     }
 
     private void loadHistoryData() {
-        DatabaseReference databaseReference = FirebaseDatabase.getInstance().getReference("actions");
+        DatabaseReference databaseReference = FirebaseDatabase.getInstance().getReference("locker_history");
 
         databaseReference.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot snapshot) {
                 historyList.clear();
                 for (DataSnapshot childSnapshot : snapshot.getChildren()) {
-                    String status = childSnapshot.child("status").getValue(String.class);
-                    String timestamp = childSnapshot.child("timestamp").getValue(String.class);
+                    String lockStatus = childSnapshot.child("lockStatus").getValue(String.class);
+                    String safetyStatus = childSnapshot.child("safetyStatus").getValue(String.class);
+                    Long timestamp = childSnapshot.child("timestamp").getValue(Long.class);
 
-                    if (status != null && timestamp != null) {
-                        historyList.add(new HistoryItem(status, timestamp));
+                    if (lockStatus != null && safetyStatus != null && timestamp != null) {
+                        historyList.add(new HistoryItem(lockStatus, safetyStatus, timestamp));
                     }
                 }
                 historyAdapter.notifyDataSetChanged(); // Update the UI
@@ -60,4 +62,5 @@ public class MainActivity3 extends AppCompatActivity {
             }
         });
     }
+
 }

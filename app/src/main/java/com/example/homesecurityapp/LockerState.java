@@ -1,15 +1,14 @@
 package com.example.homesecurityapp;
 
-public class HistoryItem {
+public class LockerState {
     private String lockStatus;
     private String safetyStatus;
     private long timestamp;
 
-    // Default constructor (required for Firebase)
-    public HistoryItem() {}
+    // Default constructor required for Firebase
+    public LockerState() {}
 
-    // Constructor to initialize fields
-    public HistoryItem(String lockStatus, String safetyStatus, long timestamp) {
+    public LockerState(String lockStatus, String safetyStatus, long timestamp) {
         this.lockStatus = lockStatus;
         this.safetyStatus = safetyStatus;
         this.timestamp = timestamp;

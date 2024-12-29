@@ -6,10 +6,10 @@ import android.content.pm.PackageManager;
 import android.graphics.SurfaceTexture;
 import android.hardware.camera2.*;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Surface;
 import android.view.TextureView;
 import android.widget.Button;
-import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -19,6 +19,9 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
 
 import java.util.Arrays;
 
@@ -32,8 +35,7 @@ public class MainActivity2 extends AppCompatActivity {
     private CaptureRequest.Builder captureRequestBuilder;
 
     private Button lockerButton;
-
-    private ImageView alertButton, homeButton, historyImage;
+    private ImageView alertButton, homeButton, historyButton;
     private TextView welcomeMessage;
     private boolean isLockerOpen = false;
 
@@ -51,10 +53,9 @@ public class MainActivity2 extends AppCompatActivity {
     private void initializeViews() {
         textureView = findViewById(R.id.live_stream);
         lockerButton = findViewById(R.id.locker_button);
-        historyImage = findViewById(R.id.history_button);
+        historyButton = findViewById(R.id.history_button);
         alertButton = findViewById(R.id.alert_button);
         homeButton = findViewById(R.id.home_button);
-        historyImage = findViewById(R.id.history_button);  // Correctly cast as ImageButton
         welcomeMessage = findViewById(R.id.welcome_message);
 
         ProgressBar progressSecurity = findViewById(R.id.progress_security);
@@ -67,17 +68,32 @@ public class MainActivity2 extends AppCompatActivity {
     private void displayWelcomeMessage() {
         Intent intent = getIntent();
         String username = intent.getStringExtra("USERNAME");
-        welcomeMessage.setText(username != null && !username.isEmpty() ? "Welcome back, " + username + "!" : "Welcome back, User!");
+        welcomeMessage.setText(username != null && !username.isEmpty()
+                ? "Welcome back, " + username + "!"
+                : "Welcome back, User!");
     }
 
     private void setupListeners() {
-        homeButton.setOnClickListener(v -> navigateTo(MainActivity5.class));
-        historyImage.setOnClickListener(v -> navigateTo(MainActivity3.class));
+        homeButton.setOnClickListener(v -> {
+            Log.d("MainActivity2", "Home button clicked");
+            navigateTo(MainActivity5.class);
+        });
+
+        historyButton.setOnClickListener(v -> {
+            Log.d("MainActivity2", "History button clicked");
+            navigateTo(MainActivity3.class);
+        });
+
         alertButton.setOnClickListener(v -> {
+            Log.d("MainActivity2", "Alert button clicked");
             Toast.makeText(this, "Alert is ON", Toast.LENGTH_SHORT).show();
             navigateTo(MainActivity4.class);
         });
-        lockerButton.setOnClickListener(v -> toggleLocker());
+
+        lockerButton.setOnClickListener(v -> {
+            Log.d("MainActivity2", "Locker button clicked");
+            toggleLocker();
+        });
     }
 
     private void navigateTo(Class<?> activityClass) {
@@ -86,18 +102,19 @@ public class MainActivity2 extends AppCompatActivity {
     }
 
     private void toggleLocker() {
+        isLockerOpen = !isLockerOpen;
         if (isLockerOpen) {
-            lockerButton.setText("Locker Closed");
-            lockerButton.setBackgroundColor(getResources().getColor(android.R.color.holo_red_dark));
-            Toast.makeText(this, "Locker is now Closed!", Toast.LENGTH_SHORT).show();
-            isLockerOpen = false;
-        } else {
             lockerButton.setText("Locker Open");
-            lockerButton.setBackgroundColor(getResources().getColor(android.R.color.holo_green_dark));
             Toast.makeText(this, "Locker is now Open!", Toast.LENGTH_SHORT).show();
-            isLockerOpen = true;
+        } else {
+            lockerButton.setText("Locker Closed");
+            Toast.makeText(this, "Locker is now Closed!", Toast.LENGTH_SHORT).show();
         }
+
+        // Save the state to Firebase
+        sendLockerStateToFirebase(isLockerOpen);
     }
+
 
     private void checkCameraPermission() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
@@ -143,31 +160,56 @@ public class MainActivity2 extends AppCompatActivity {
     private void openCamera() {
         try {
             CameraManager cameraManager = (CameraManager) getSystemService(CAMERA_SERVICE);
-            String cameraId = cameraManager.getCameraIdList()[0]; // Rear camera
-            cameraManager.openCamera(cameraId, new CameraDevice.StateCallback() {
-                @Override
-                public void onOpened(@NonNull CameraDevice camera) {
-                    cameraDevice = camera;
-                    createCameraPreviewSession();
-                }
+            String[] cameraIdList = cameraManager.getCameraIdList();
+            if (cameraIdList.length > 0) {
+                String cameraId = cameraIdList[0]; // Rear camera
+                if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+                    cameraManager.openCamera(cameraId, new CameraDevice.StateCallback() {
+                        @Override
+                        public void onOpened(@NonNull CameraDevice camera) {
+                            cameraDevice = camera;
+                            createCameraPreviewSession();
+                        }
 
-                @Override
-                public void onDisconnected(@NonNull CameraDevice camera) {
-                    camera.close();
-                    cameraDevice = null;
-                }
+                        @Override
+                        public void onDisconnected(@NonNull CameraDevice camera) {
+                            camera.close();
+                            cameraDevice = null;
+                        }
 
-                @Override
-                public void onError(@NonNull CameraDevice camera, int error) {
-                    camera.close();
-                    cameraDevice = null;
-                    Toast.makeText(MainActivity2.this, "Camera error: " + error, Toast.LENGTH_SHORT).show();
+                        @Override
+                        public void onError(@NonNull CameraDevice camera, int error) {
+                            camera.close();
+                            cameraDevice = null;
+                            Toast.makeText(MainActivity2.this, "Camera error: " + error, Toast.LENGTH_SHORT).show();
+                        }
+                    }, null); // Null handler
+                } else {
+                    Toast.makeText(this, "Camera permission not granted", Toast.LENGTH_SHORT).show();
                 }
-            }, null);
+            } else {
+                Toast.makeText(this, "No cameras available", Toast.LENGTH_SHORT).show();
+            }
         } catch (CameraAccessException e) {
             e.printStackTrace();
+            Toast.makeText(this, "Failed to access camera: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         }
     }
+
+    private void sendLockerStateToFirebase(boolean isLockerOpen) {
+        String lockStatus = isLockerOpen ? "Unlocked" : "Locked";
+        String safetyStatus = isLockerOpen ? "Not Safe" : "Safe";
+        long timestamp = System.currentTimeMillis();
+
+        HistoryItem historyItem = new HistoryItem(lockStatus, safetyStatus, timestamp);
+
+        // Reference to the Firebase database
+        DatabaseReference databaseReference = FirebaseDatabase.getInstance().getReference("locker_history");
+        databaseReference.push().setValue(historyItem)
+                .addOnSuccessListener(aVoid -> Toast.makeText(this, "Locker state saved successfully", Toast.LENGTH_SHORT).show())
+                .addOnFailureListener(e -> Toast.makeText(this, "Failed to save locker state: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+    }
+
 
     private void createCameraPreviewSession() {
         try {
@@ -185,7 +227,7 @@ public class MainActivity2 extends AppCompatActivity {
                     try {
                         cameraCaptureSession.setRepeatingRequest(captureRequestBuilder.build(), null, null);
                     } catch (CameraAccessException e) {
-                        e.printStackTrace();
+                        Log.e("MainActivity2", "Error setting up camera preview: " + e.getMessage());
                     }
                 }
 
@@ -195,7 +237,7 @@ public class MainActivity2 extends AppCompatActivity {
                 }
             }, null);
         } catch (CameraAccessException e) {
-            e.printStackTrace();
+            Log.e("MainActivity2", "Error creating camera preview session: " + e.getMessage());
         }
     }
 
