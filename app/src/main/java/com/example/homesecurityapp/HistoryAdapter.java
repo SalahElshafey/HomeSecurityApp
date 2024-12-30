@@ -21,23 +21,33 @@ public class HistoryAdapter extends ArrayAdapter<HistoryItem> {
         super(context, 0, historyItems);
     }
 
+    private static class ViewHolder {
+        TextView lockStatusTextView;
+        TextView safetyStatusTextView;
+        TextView timestampTextView;
+    }
+
     @NonNull
     @Override
     public View getView(int position, @Nullable View convertView, @NonNull ViewGroup parent) {
+        ViewHolder viewHolder;
+
         if (convertView == null) {
             convertView = LayoutInflater.from(getContext()).inflate(R.layout.history_item, parent, false);
+            viewHolder = new ViewHolder();
+            viewHolder.lockStatusTextView = convertView.findViewById(R.id.lock_status_text_view);
+            viewHolder.safetyStatusTextView = convertView.findViewById(R.id.safety_status_text_view);
+            viewHolder.timestampTextView = convertView.findViewById(R.id.timestamp_text_view);
+            convertView.setTag(viewHolder);
+        } else {
+            viewHolder = (ViewHolder) convertView.getTag();
         }
 
         HistoryItem historyItem = getItem(position);
-
-        TextView lockStatusTextView = convertView.findViewById(R.id.lock_status_text_view);
-        TextView safetyStatusTextView = convertView.findViewById(R.id.safety_status_text_view);
-        TextView timestampTextView = convertView.findViewById(R.id.timestamp_text_view);
-
         if (historyItem != null) {
-            lockStatusTextView.setText("Lock Status: " + historyItem.getLockStatus());
-            safetyStatusTextView.setText("Safety Status: " + historyItem.getSafetyStatus());
-            timestampTextView.setText(formatTimestamp(historyItem.getTimestamp()));
+            viewHolder.lockStatusTextView.setText("Lock Status: " + historyItem.getLockStatus());
+            viewHolder.safetyStatusTextView.setText("Safety Status: " + historyItem.getSafetyStatus());
+            viewHolder.timestampTextView.setText(formatTimestamp(historyItem.getTimestamp()));
         }
 
         return convertView;

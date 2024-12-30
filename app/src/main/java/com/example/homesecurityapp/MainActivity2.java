@@ -23,11 +23,12 @@ import androidx.core.content.ContextCompat;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 
-import java.util.Arrays;
+import java.util.Collections;
 
 public class MainActivity2 extends AppCompatActivity {
 
     private static final int CAMERA_REQUEST_CODE = 100;
+    private static final String TAG = "MainActivity2";
 
     private TextureView textureView;
     private CameraDevice cameraDevice;
@@ -39,6 +40,8 @@ public class MainActivity2 extends AppCompatActivity {
     private TextView welcomeMessage;
     private boolean isLockerOpen = false;
 
+    private DatabaseReference databaseReference;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -48,6 +51,8 @@ public class MainActivity2 extends AppCompatActivity {
         displayWelcomeMessage();
         setupListeners();
         checkCameraPermission();
+
+        databaseReference = FirebaseDatabase.getInstance().getReference("locker_history");
     }
 
     private void initializeViews() {
@@ -74,26 +79,13 @@ public class MainActivity2 extends AppCompatActivity {
     }
 
     private void setupListeners() {
-        homeButton.setOnClickListener(v -> {
-            Log.d("MainActivity2", "Home button clicked");
-            navigateTo(MainActivity5.class);
-        });
-
-        historyButton.setOnClickListener(v -> {
-            Log.d("MainActivity2", "History button clicked");
-            navigateTo(MainActivity3.class);
-        });
-
+        homeButton.setOnClickListener(v -> navigateTo(MainActivity5.class));
+        historyButton.setOnClickListener(v -> navigateTo(MainActivity3.class));
         alertButton.setOnClickListener(v -> {
-            Log.d("MainActivity2", "Alert button clicked");
             Toast.makeText(this, "Alert is ON", Toast.LENGTH_SHORT).show();
             navigateTo(MainActivity4.class);
         });
-
-        lockerButton.setOnClickListener(v -> {
-            Log.d("MainActivity2", "Locker button clicked");
-            toggleLocker();
-        });
+        lockerButton.setOnClickListener(v -> toggleLocker());
     }
 
     private void navigateTo(Class<?> activityClass) {
@@ -103,18 +95,21 @@ public class MainActivity2 extends AppCompatActivity {
 
     private void toggleLocker() {
         isLockerOpen = !isLockerOpen;
-        if (isLockerOpen) {
-            lockerButton.setText("Locker Open");
-            Toast.makeText(this, "Locker is now Open!", Toast.LENGTH_SHORT).show();
-        } else {
-            lockerButton.setText("Locker Closed");
-            Toast.makeText(this, "Locker is now Closed!", Toast.LENGTH_SHORT).show();
-        }
 
-        // Save the state to Firebase
-        sendLockerStateToFirebase(isLockerOpen);
+        String lockStatus = isLockerOpen ? "Unlocked" : "Locked";
+        String safetyStatus = isLockerOpen ? "Not Safe" : "Safe";
+        long timestamp = System.currentTimeMillis();
+
+        runOnUiThread(() -> {
+            lockerButton.setText(isLockerOpen ? "Locker Open" : "Locker Closed");
+            Toast.makeText(this, isLockerOpen ? "Locker is now Open!" : "Locker is now Closed!", Toast.LENGTH_SHORT).show();
+        });
+
+        HistoryItem historyItem = new HistoryItem(lockStatus, safetyStatus, timestamp);
+        databaseReference.push().setValue(historyItem)
+                .addOnSuccessListener(aVoid -> Log.d(TAG, "Locker state saved successfully"))
+                .addOnFailureListener(e -> Log.e(TAG, "Failed to save locker state", e));
     }
-
 
     private void checkCameraPermission() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
@@ -129,7 +124,6 @@ public class MainActivity2 extends AppCompatActivity {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (requestCode == CAMERA_REQUEST_CODE) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                Toast.makeText(this, "Camera permission granted", Toast.LENGTH_SHORT).show();
                 initializeLiveStream();
             } else {
                 Toast.makeText(this, "Camera permission denied", Toast.LENGTH_SHORT).show();
@@ -160,84 +154,65 @@ public class MainActivity2 extends AppCompatActivity {
     private void openCamera() {
         try {
             CameraManager cameraManager = (CameraManager) getSystemService(CAMERA_SERVICE);
-            String[] cameraIdList = cameraManager.getCameraIdList();
-            if (cameraIdList.length > 0) {
-                String cameraId = cameraIdList[0]; // Rear camera
-                if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
-                    cameraManager.openCamera(cameraId, new CameraDevice.StateCallback() {
-                        @Override
-                        public void onOpened(@NonNull CameraDevice camera) {
-                            cameraDevice = camera;
-                            createCameraPreviewSession();
-                        }
+            String cameraId = cameraManager.getCameraIdList()[0];
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+                cameraManager.openCamera(cameraId, new CameraDevice.StateCallback() {
+                    @Override
+                    public void onOpened(@NonNull CameraDevice camera) {
+                        cameraDevice = camera;
+                        createCameraPreviewSession();
+                    }
 
-                        @Override
-                        public void onDisconnected(@NonNull CameraDevice camera) {
-                            camera.close();
-                            cameraDevice = null;
-                        }
+                    @Override
+                    public void onDisconnected(@NonNull CameraDevice camera) {
+                        camera.close();
+                        cameraDevice = null;
+                    }
 
-                        @Override
-                        public void onError(@NonNull CameraDevice camera, int error) {
-                            camera.close();
-                            cameraDevice = null;
-                            Toast.makeText(MainActivity2.this, "Camera error: " + error, Toast.LENGTH_SHORT).show();
-                        }
-                    }, null); // Null handler
-                } else {
-                    Toast.makeText(this, "Camera permission not granted", Toast.LENGTH_SHORT).show();
-                }
+                    @Override
+                    public void onError(@NonNull CameraDevice camera, int error) {
+                        camera.close();
+                        cameraDevice = null;
+                        Log.e(TAG, "Camera error: " + error);
+                    }
+                }, null);
             } else {
-                Toast.makeText(this, "No cameras available", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Camera permission not granted", Toast.LENGTH_SHORT).show();
             }
         } catch (CameraAccessException e) {
-            e.printStackTrace();
-            Toast.makeText(this, "Failed to access camera: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            Log.e(TAG, "Camera access exception: " + e.getMessage());
         }
     }
-
-    private void sendLockerStateToFirebase(boolean isLockerOpen) {
-        String lockStatus = isLockerOpen ? "Unlocked" : "Locked";
-        String safetyStatus = isLockerOpen ? "Not Safe" : "Safe";
-        long timestamp = System.currentTimeMillis();
-
-        HistoryItem historyItem = new HistoryItem(lockStatus, safetyStatus, timestamp);
-
-        // Reference to the Firebase database
-        DatabaseReference databaseReference = FirebaseDatabase.getInstance().getReference("locker_history");
-        databaseReference.push().setValue(historyItem)
-                .addOnSuccessListener(aVoid -> Toast.makeText(this, "Locker state saved successfully", Toast.LENGTH_SHORT).show())
-                .addOnFailureListener(e -> Toast.makeText(this, "Failed to save locker state: " + e.getMessage(), Toast.LENGTH_SHORT).show());
-    }
-
 
     private void createCameraPreviewSession() {
         try {
             SurfaceTexture surfaceTexture = textureView.getSurfaceTexture();
+            if (surfaceTexture == null) return;
+
             surfaceTexture.setDefaultBufferSize(1920, 1080);
             Surface surface = new Surface(surfaceTexture);
 
             captureRequestBuilder = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
             captureRequestBuilder.addTarget(surface);
 
-            cameraDevice.createCaptureSession(Arrays.asList(surface), new CameraCaptureSession.StateCallback() {
+            cameraDevice.createCaptureSession(Collections.singletonList(surface), new CameraCaptureSession.StateCallback() {
                 @Override
                 public void onConfigured(@NonNull CameraCaptureSession session) {
                     cameraCaptureSession = session;
                     try {
                         cameraCaptureSession.setRepeatingRequest(captureRequestBuilder.build(), null, null);
                     } catch (CameraAccessException e) {
-                        Log.e("MainActivity2", "Error setting up camera preview: " + e.getMessage());
+                        Log.e(TAG, "Capture session error: " + e.getMessage());
                     }
                 }
 
                 @Override
                 public void onConfigureFailed(@NonNull CameraCaptureSession session) {
-                    Toast.makeText(MainActivity2.this, "Camera configuration failed!", Toast.LENGTH_SHORT).show();
+                    Log.e(TAG, "Camera configuration failed");
                 }
             }, null);
         } catch (CameraAccessException e) {
-            Log.e("MainActivity2", "Error creating camera preview session: " + e.getMessage());
+            Log.e(TAG, "Error creating capture session: " + e.getMessage());
         }
     }
 
