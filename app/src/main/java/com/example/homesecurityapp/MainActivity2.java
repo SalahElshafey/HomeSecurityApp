@@ -41,6 +41,7 @@ public class MainActivity2 extends AppCompatActivity {
     private boolean isLockerOpen = false;
 
     private DatabaseReference databaseReference;
+    private DatabaseReference buzzerReference;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,7 +53,9 @@ public class MainActivity2 extends AppCompatActivity {
         setupListeners();
         checkCameraPermission();
 
+        // Initialize Firebase references
         databaseReference = FirebaseDatabase.getInstance().getReference("locker_history");
+        buzzerReference = FirebaseDatabase.getInstance().getReference("buzzer_status");
     }
 
     private void initializeViews() {
@@ -81,10 +84,14 @@ public class MainActivity2 extends AppCompatActivity {
     private void setupListeners() {
         homeButton.setOnClickListener(v -> navigateTo(MainActivity5.class));
         historyButton.setOnClickListener(v -> navigateTo(MainActivity3.class));
+
         alertButton.setOnClickListener(v -> {
+            // Trigger buzzer and save alert state to Firebase
+            saveBuzzerAlertToFirebase();
             Toast.makeText(this, "Alert is ON", Toast.LENGTH_SHORT).show();
             navigateTo(MainActivity4.class);
         });
+
         lockerButton.setOnClickListener(v -> toggleLocker());
     }
 
@@ -100,15 +107,33 @@ public class MainActivity2 extends AppCompatActivity {
         String safetyStatus = isLockerOpen ? "Not Safe" : "Safe";
         long timestamp = System.currentTimeMillis();
 
-        runOnUiThread(() -> {
-            lockerButton.setText(isLockerOpen ? "Locker Open" : "Locker Closed");
-            Toast.makeText(this, isLockerOpen ? "Locker is now Open!" : "Locker is now Closed!", Toast.LENGTH_SHORT).show();
-        });
+        // Update button UI and color
+        updateLockerButtonUI();
 
-        HistoryItem historyItem = new HistoryItem(lockStatus, safetyStatus, timestamp);
-        databaseReference.push().setValue(historyItem)
+        // Save state to Firebase
+        DatabaseReference stateRef = FirebaseDatabase.getInstance().getReference("locker_state");
+        stateRef.setValue(isLockerOpen)
                 .addOnSuccessListener(aVoid -> Log.d(TAG, "Locker state saved successfully"))
                 .addOnFailureListener(e -> Log.e(TAG, "Failed to save locker state", e));
+
+        // Save history item for tracking
+        HistoryItem historyItem = new HistoryItem(lockStatus, safetyStatus, timestamp);
+        databaseReference.push().setValue(historyItem)
+                .addOnSuccessListener(aVoid -> Log.d(TAG, "Locker history saved successfully"))
+                .addOnFailureListener(e -> Log.e(TAG, "Failed to save locker history", e));
+    }
+
+
+
+    private void saveBuzzerAlertToFirebase() {
+        long timestamp = System.currentTimeMillis();
+        String alertMessage = "Alert triggered!";
+
+        BuzzerItem buzzerItem = new BuzzerItem(alertMessage, timestamp);
+
+        buzzerReference.push().setValue(buzzerItem)
+                .addOnSuccessListener(aVoid -> Log.d(TAG, "Buzzer alert saved successfully"))
+                .addOnFailureListener(e -> Log.e(TAG, "Failed to save buzzer alert", e));
     }
 
     private void checkCameraPermission() {
@@ -214,6 +239,40 @@ public class MainActivity2 extends AppCompatActivity {
         } catch (CameraAccessException e) {
             Log.e(TAG, "Error creating capture session: " + e.getMessage());
         }
+    }
+//added for locker functionality
+
+    private void restoreLockerState() {
+        DatabaseReference stateRef = FirebaseDatabase.getInstance().getReference("locker_state");
+        stateRef.addListenerForSingleValueEvent(new com.google.firebase.database.ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull com.google.firebase.database.DataSnapshot snapshot) {
+                if (snapshot.exists()) {
+                    Boolean state = snapshot.getValue(Boolean.class);
+                    if (state != null) {
+                        isLockerOpen = state;
+                        runOnUiThread(() -> updateLockerButtonUI()); // Ensure UI updates run on the main thread
+                    }
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull com.google.firebase.database.DatabaseError error) {
+                Log.e(TAG, "Failed to restore locker state: " + error.getMessage());
+            }
+        });
+    }
+
+    private void updateLockerButtonUI() {
+        lockerButton.setText(isLockerOpen ? "Locker Open" : "Locker Closed");
+        lockerButton.setBackgroundColor(getResources().getColor(
+                isLockerOpen ? android.R.color.holo_green_light : android.R.color.holo_red_light
+        ));
+    }
+    @Override
+    protected void onResume() {
+        super.onResume();
+        restoreLockerState();
     }
 
     @Override

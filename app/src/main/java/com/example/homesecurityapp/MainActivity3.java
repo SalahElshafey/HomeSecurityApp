@@ -110,13 +110,12 @@ public class MainActivity3 extends AppCompatActivity {
         if (databaseReference != null && childEventListener != null) {
             databaseReference.removeEventListener(childEventListener);
             childEventListener = null;
-        }
-    }
+        }}
 
     @Override
     protected void onPause() {
         super.onPause();
-        detachFirebaseListener(); // Detach listener when leaving activity
+        detachFirebaseListener(); // Detach listeners
     }
 
     @Override
@@ -128,6 +127,6 @@ public class MainActivity3 extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        detachFirebaseListener(); // Ensure listener is detached on activity destroy
+        detachFirebaseListener(); // Ensure no listeners remain active
     }
 }
